@@ -1,6 +1,6 @@
 # Update-PowershellModules
 
-Update installed PowerShell modules from PowerShell Gallery.
+Update installed PowerShell modules from [PowerShell Gallery](https://www.powershellgallery.com).
 
 ## Reporting Issues
 
