@@ -46,9 +46,9 @@ Set-StrictMode -Version Latest
 Get-InstalledModule -Name $Name |
 Sort-Object -Property Name |
 ForEach-Object -Begin {
-  # Obsolete modules with dependencies to be uninstalled later
+  # Obsoleted versions with dependencies to be uninstalled later
   [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
-  $ObsoleteModuleVersions = @()
+  $ObsoletedVersions = @()
 } -Process {
   $InstalledModule = $_
   # Get all installed versions
@@ -70,47 +70,47 @@ ForEach-Object -Begin {
   } else {
     Write-Host -ForegroundColor Green "$($InstalledModule.Name) - The latest version $($LatestModule.Version) ($($LatestModule.PublishedDate)) is already installed"
   }
-  # Uninstall obsolete module versions
+  # Uninstall obsoleted versions
   try {
     $InstalledVersions |
     Where-Object { $_.Version -ne $LatestModule.Version } |
     Sort-Object -Property Version |
     ForEach-Object {
-      $ObsoleteModuleVersion = $_
-      Write-Host -ForegroundColor Cyan "$($ObsoleteModuleVersion.Name) - Uninstalling obsolete version $($ObsoleteModuleVersion.Version) ($($ObsoleteModuleVersion.PublishedDate))"
-      $ObsoleteModuleVersion | Uninstall-Module -Force
+      $ObsoletedVersion = $_
+      Write-Host -ForegroundColor Cyan "$($ObsoletedVersion.Name) - Uninstalling obsoleted version $($ObsoletedVersion.Version) ($($ObsoletedVersion.PublishedDate))"
+      $ObsoletedVersion | Uninstall-Module -Force
     }
   } catch {
-    # Catch obsolete module version with dependencies to be uninstalled later
-    $ObsoleteModuleVersions += $ObsoleteModuleVersion
+    # Catch obsoleted version with dependencies to be uninstalled later
+    $ObsoletedVersions += $ObsoletedVersion
   }
 } -End {
-  # Recursively uninstall obsolete module versions with dependencies
-  while ($ObsoleteModuleVersions) {
+  # Recursively uninstall obsoleted versions with dependencies
+  while ($ObsoletedVersions) {
     $RemainingModuleVersions = @()
-    $ObsoleteModuleVersions |
+    $ObsoletedVersions |
     ForEach-Object {
-      $ObsoleteModuleVersion = $_
+      $ObsoletedVersion = $_
       try {
-        Write-Host -ForegroundColor Cyan "$($ObsoleteModuleVersion.Name) - Uninstalling obsolete version $($ObsoleteModuleVersion.Version) ($($ObsoleteModuleVersion.PublishedDate))"
-        $ObsoleteModuleVersion | Uninstall-Module -Force -ErrorAction Continue
+        Write-Host -ForegroundColor Cyan "$($ObsoletedVersion.Name) - Uninstalling obsoleted version $($ObsoletedVersion.Version) ($($ObsoletedVersion.PublishedDate))"
+        $ObsoletedVersion | Uninstall-Module -Force -ErrorAction Continue
       } catch {
         # Catch module versions which still have dependencies to be uninstalled later
-        $RemainingModuleVersions += $ObsoleteModuleVersion
+        $RemainingModuleVersions += $ObsoletedVersion
       }
     }
     # No module versions were uninstalled due to dependencies on modules outside the updated module name scope
-    if ($RemainingModuleVersions.Count -eq $ObsoleteModuleVersions.Count) {
+    if ($RemainingModuleVersions.Count -eq $ObsoletedVersions.Count) {
       $RemainingModuleVersions |
       ForEach-Object {
-        $ObsoleteModuleVersion = $_
-        Write-Host -ForegroundColor Red "$($ObsoleteModuleVersion.Name) - Cannot uninstall obsolete version $($ObsoleteModuleVersion.Version) ($($ObsoleteModuleVersion.PublishedDate)) because of dependencies!"
+        $ObsoletedVersion = $_
+        Write-Host -ForegroundColor Red "$($ObsoletedVersion.Name) - Cannot uninstall obsoleted version $($ObsoletedVersion.Version) ($($ObsoletedVersion.PublishedDate)) because of dependencies!"
       }
       # Stop uninstalling modules with dependencies on modules outside the updated module name scope
       $RemainingModuleVersions = @()
     }
     # Uninstall the remaining modules
-    $ObsoleteModuleVersions = $RemainingModuleVersions
+    $ObsoletedVersions = $RemainingModuleVersions
   }
 }
 
